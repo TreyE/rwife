@@ -39,7 +39,7 @@ defmodule Rwife.PacketServer do
   end
 
   defp start_port(settings) do
-    port = :erlang.open_port({:spawn, settings.command}, [{:packet, 4}, :binary, :nouse_stdio, :exit_status] ++ settings.spawn_args)
+    port = :erlang.open_port({:spawn, settings.command}, [{:packet, 4}, :binary, :use_stdio, :exit_status] ++ settings.spawn_args)
     :erlang.port_connect(port, self())
     port
   end
