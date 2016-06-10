@@ -15,6 +15,7 @@ defmodule Rwife.PacketServer do
     case call_port(port, data, settings) do
       {:ok, reply} -> {:reply, reply, {settings, port}}
       {:error, :timeout} -> {:reply, {:timeout, data}, {settings, port}}
+      {:error, err_data} -> {:stop, {:port_error, data, err_data}, {settings, port}}
     end
   end
 
@@ -33,6 +34,8 @@ defmodule Rwife.PacketServer do
     :erlang.port_command(port, cmd)
     receive do
       {_r_port, {:data, data}} -> {:ok, data}
+      {err_port,{:exit_status,e_status}} -> {:error, {:port_exit, err_port, e_status}}
+      other_message -> {:error, {:unknown_port_message, other_message}}
     after
       settings.timeout -> {:error, :timeout}
     end

@@ -1,7 +1,7 @@
 require "JSON"
 
-in_io = IO.new(3, "rb").binmode
-out_io = IO.new(4, "wb").binmode
+in_io = IO.new(0, "rb").binmode
+out_io = IO.new(1, "wb").binmode
 while (port_in = in_io.read(4)) do
   length = port_in.unpack("N").first
   # $stderr.puts length.inspect
