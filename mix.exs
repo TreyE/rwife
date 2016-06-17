@@ -28,7 +28,7 @@ defmodule Rwife.Mixfile do
   # Type "mix help deps" for more examples and options
   defp deps do
     [
-      {:poolboy, github: "devinus/poolboy", tag: "1.5.1"} 
+      {:poolboy, ">= 1.5.1"}
     ]
   end
 end
