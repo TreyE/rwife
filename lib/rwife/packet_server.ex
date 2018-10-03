@@ -16,9 +16,14 @@ defmodule Rwife.PacketServer do
 
   def handle_call({:sync_call, data}, _from, {settings, port, os_pid}) do
     case call_port(port, data, settings) do
-      {:ok, reply} -> {:reply, reply, {settings, port, os_pid}}
-      {:error, :timeout} -> {:reply, {:timeout, data}, {settings, port, os_pid}}
-      {:error, err_data} -> {:stop, {:port_error, data, err_data}, {settings, port, os_pid}}
+      {:ok, reply} ->
+        {:reply, reply, {settings, port, os_pid}}
+      {:error, :timeout} ->
+        {:reply, {:timeout, data}, {settings, port, os_pid}}
+      {:error, {:port_exit, err_port, e_status}} ->
+        {:stop, {:port_exit, err_port, e_status}}
+      {:error, err_data} ->
+        {:stop, {:port_error, data, err_data}, {settings, port, os_pid}}
     end
   end
 
@@ -32,9 +37,10 @@ defmodule Rwife.PacketServer do
 
   def handle_info(info, state) do
     case info do
-      {:EXIT, err_port, reason} -> {:stop, {:port_exit, err_port, reason}}
-      {port, {:exit_status, e_status}} -> {:stop, {:port_exit, port, e_status}, state}
-      :process_info -> {:reply}
+      {:EXIT, err_port, reason} ->
+        {:stop, {:port_exit, err_port, reason}, state}
+      {err_port, {:exit_status, e_status}} ->
+        {:stop, {:port_exit, err_port, e_status}, state}
       _ -> {:stop, {:message_not_understood, info}, state}
     end
   end
@@ -57,6 +63,7 @@ defmodule Rwife.PacketServer do
   end
 
   defp start_port(settings) do
+    Process.flag(:trap_exit, true)
     port =
       :erlang.open_port(
         {:spawn, settings.command},
@@ -64,7 +71,6 @@ defmodule Rwife.PacketServer do
       )
 
     :erlang.port_connect(port, self())
-    Process.flag(:trap_exit, true)
     p_info = :erlang.port_info(port)
     {port, p_info[:os_pid]}
   end
@@ -75,9 +81,10 @@ defmodule Rwife.PacketServer do
       _ ->
         :erlang.port_close(port)
         receive do
-          {:EXIT, _, :normal} -> :ok
-          {_, {:exit_status, _}} -> :ok
-          a -> IO.inspect(a)
+          {:EXIT, ^port, :normal} -> :ok
+          {^port, {:exit_status, _}} -> :ok
+          a ->
+            {:shutdown_error, a}
         end
     end
   end
