@@ -1,13 +1,13 @@
 defmodule Rwife.PacketServer do
   use GenServer
 
-  def start_link(port_settings) do
-    :gen_server.start_link(__MODULE__, port_settings, [])
+  def start_link(settings) do
+    :gen_server.start_link(__MODULE__, settings, [])
   end
 
-  def init(port_settings) do
-    {spawned_port, os_pid} = start_port(port_settings)
-    {:ok, {port_settings, spawned_port, os_pid}}
+  def init(settings) do
+    {spawned_port, os_pid} = start_port(settings)
+    {:ok, {settings.port_settings, spawned_port, os_pid}}
   end
 
   def handle_call(:server_info, _from, {settings, port, os_pid}) do
@@ -65,8 +65,8 @@ defmodule Rwife.PacketServer do
     Process.flag(:trap_exit, true)
     port =
       :erlang.open_port(
-        {:spawn, settings.command},
-        [{:packet, 4}, :binary, :use_stdio, :exit_status] ++ settings.spawn_args
+        {:spawn, settings.port_settings.command},
+        [{:packet, 4}, :binary, :use_stdio, :exit_status] ++ settings.port_settings.spawn_args
       )
 
     :erlang.port_connect(port, self())
