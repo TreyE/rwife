@@ -11,7 +11,7 @@ defmodule Rwife.PacketServer do
   end
 
   def handle_call(:server_info, _from, {settings, port, os_pid}) do
-    {:reply, Rwife.WorkerInfo.new(settings, port, self(), os_pid), {settings, port, os_pid}}
+    {:reply, Rwife.Workers.WorkerInfo.new(settings, port, self(), os_pid), {settings, port, os_pid}}
   end
 
   def handle_call({:sync_call, data}, _from, {settings, port, os_pid}) do
@@ -51,7 +51,6 @@ defmodule Rwife.PacketServer do
 
   defp call_port(port, cmd, settings) do
     :erlang.port_command(port, cmd)
-
     receive do
       {:EXIT, err_port, reason} -> {:error, {:port_exit, err_port, reason}}
       {_r_port, {:data, data}} -> {:ok, data}
