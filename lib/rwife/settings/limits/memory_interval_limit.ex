@@ -1,14 +1,22 @@
 defmodule Rwife.Settings.Limits.MemoryIntervalLimit do
-  @type t :: %__MODULE__{}
+  @type t :: %__MODULE__{
+    per: integer(),
+    times: integer(),
+    every: integer()
+  }
 
   defstruct [per: 5, times: 3, every: 30000, limit: nil]
 
   def max_interval(mil) do
-    mil.every * mil.per * 2
+    (mil.every * mil.per) + mil.every
   end
 
-  def hit?(mil, readings) do
-    case has_min_measurements?(mil, readings) do
+  def hit?(mil, readings, last_update) do
+    limit_time = (last_update - (max_interval(mil)/1000))
+    selected_readings = Enum.filter(readings, fn(reading) ->
+      reading.timestamp >= limit_time
+    end)
+    case has_min_measurements?(mil, selected_readings) do
       true -> false
          _ -> over_ratio(mil, readings) >= ratio(mil)
     end
@@ -31,6 +39,6 @@ defmodule Rwife.Settings.Limits.MemoryIntervalLimit do
   end
 
   defp has_min_measurements?(mil, readings) do
-    (Enum.count(readings) > mil.per)
+    (Enum.count(readings) >= mil.per)
   end
 end

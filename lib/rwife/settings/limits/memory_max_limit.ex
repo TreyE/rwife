@@ -4,14 +4,14 @@ defmodule Rwife.Settings.Limits.MemoryMaxLimit do
   defstruct [limit: nil]
 
   def max_interval(_) do
-    10000
+    20000
   end
 
-  def hit?(_, []) do
+  def hit?(_, [], _) do
     false
   end
 
-  def hit?(mil, readings) do
+  def hit?(mil, readings, _) do
     Enum.any?(readings, fn(reading) ->
       reading.rss >= mil.limit
     end)

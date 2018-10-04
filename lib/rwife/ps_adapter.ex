@@ -11,6 +11,6 @@ defmodule Rwife.PsAdapter do
       end
     cmd = adapter_mod.encode_command(pids)
     cmd_output = :os.cmd(to_charlist(cmd))
-    adapter_mod.parse_ps_output(:os.timestamp(), to_string(cmd_output))
+    adapter_mod.parse_ps_output(System.os_time(:second), to_string(cmd_output))
   end
 end
