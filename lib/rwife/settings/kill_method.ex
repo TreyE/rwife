@@ -1,9 +1,10 @@
 defmodule Rwife.Settings.KillMethod do
   @type t :: %__MODULE__{}
+  @type kill_signal :: :SIGHUP | :SIGINT | :SIGKILL | :SIGTERM | integer()
 
   defstruct [stop_signal: 15, wait: 5000]
 
-  @spec execute_kill(Rwife.Settings.KillMethod.t, Rwife.Workers.WorkerInfo.t) :: :ok | {:error, any()}
+  @spec execute_kill(Rwife.Settings.KillMethod.t, Rwife.Workers.MonitoredProcess.t()) :: :ok | {:error, any()}
   def execute_kill(kill_method, worker_info) do
     Process.flag(:trap_exit, true)
     Process.link(worker_info.port)
@@ -24,13 +25,13 @@ defmodule Rwife.Settings.KillMethod do
     %__MODULE__{}
   end
 
-  @spec new(:SIGHUP | :SIGINT | :SIGKILL | :SIGTERM | integer()) :: Rwife.Settings.KillMethod.t()
+  @spec new(kill_signal()) :: Rwife.Settings.KillMethod.t()
   def new(stop_signal) do
     %__MODULE__{} |> signal(stop_signal)
   end
 
 
-  @spec new(:SIGHUP | :SIGINT | :SIGKILL | :SIGTERM | integer(), integer()) ::
+  @spec new(kill_signal(), integer()) ::
           Rwife.Settings.KillMethod.t()
   def new(stop_signal, wait) when is_integer(wait) do
     %__MODULE__{} |> signal(stop_signal) |> wait(wait)

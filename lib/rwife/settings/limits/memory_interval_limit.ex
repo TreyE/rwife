@@ -12,7 +12,7 @@ defmodule Rwife.Settings.Limits.MemoryIntervalLimit do
   end
 
   def hit?(mil, readings, last_update) do
-    limit_time = (last_update - (max_interval(mil)/1000))
+    limit_time = last_update - max_interval(mil)
     selected_readings = Enum.filter(readings, fn(reading) ->
       reading.timestamp >= limit_time
     end)

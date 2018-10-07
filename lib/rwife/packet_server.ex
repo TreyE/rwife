@@ -1,10 +1,12 @@
 defmodule Rwife.PacketServer do
   use GenServer
 
+  @spec start_link(Rwife.Settings.PortSettings.t()) :: :ignore | {:error, any()} | {:ok, pid()}
   def start_link(settings) do
     :gen_server.start_link(__MODULE__, settings, [])
   end
 
+  @spec init(Rwife.Settings.PortSettings.t()) :: {:ok, {Rwife.Settings.PortSettings.t(), any(), any()}}
   def init(settings) do
     {spawned_port, os_pid} = start_port(settings)
     {:ok, {settings, spawned_port, os_pid}}
@@ -71,7 +73,14 @@ defmodule Rwife.PacketServer do
 
     :erlang.port_connect(port, self())
     p_info = :erlang.port_info(port)
-    {port, p_info[:os_pid]}
+    os_pid = p_info[:os_pid]
+    case settings.perf_limit do
+      :LET_ME_BE -> :ok
+      a ->
+        mp = Rwife.Workers.MonitoredProcess.new(os_pid, port, a.perf_limit)
+        Rwife.Workers.PerfMonitor.watch(mp)
+    end
+    {port, os_pid}
   end
 
   defp stop_port(port) do

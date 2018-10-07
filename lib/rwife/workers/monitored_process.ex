@@ -1,13 +1,21 @@
 defmodule Rwife.Workers.MonitoredProcess do
-  @type t :: %__MODULE__{}
+  @type t :: %__MODULE__{
+    os_pid: integer(),
+    port: port(),
+    kill_method: Rwife.Settings.KillMethod.t(),
+    limits: [Rwife.Settings.PerfLimit.limit_type()]
+  }
 
-  defstruct [:worker_info, :kill_method, limits: []]
+  defstruct [:os_pid, :port, :kill_method, limits: []]
 
-  def os_pid(mp) do
-    mp.worker_info.os_pid
-  end
-
-  def worker_info(mp) do
-    mp.worker_info
+  @spec new(integer(), port(), Rwife.Settings.PerfLimit.t()) :: Rwife.Workers.MonitoredProcess.t()
+  def new(os_pid, port, %Rwife.Settings.PerfLimit{} = perf_limit) when
+    is_integer(os_pid) and is_port(port) do
+    %__MODULE__{
+      os_pid: os_pid,
+      port: port,
+      kill_method: perf_limit.kill_method,
+      limits: perf_limit.limits
+    }
   end
 end

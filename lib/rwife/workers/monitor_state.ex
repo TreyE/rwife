@@ -28,11 +28,11 @@ defmodule Rwife.Workers.MonitorState do
 
   def update_readings(ms) do
     pids = Enum.map(ms.monitored_processes, fn(mp) ->
-      Rwife.Workers.MonitoredProcess.os_pid(mp)
+      mp.os_pid
     end)
     new_readings = Rwife.PsAdapter.take_measurements(Enum.to_list(pids))
-    last_update = System.os_time(:second)
-    earliest_time = last_update - (ms.longest_interval/1000)
+    last_update = System.os_time(:millisecond)
+    earliest_time = last_update - ms.longest_interval
     kept_readings = Enum.reject(ms.perf_readings, fn(pr) ->
       pr.timestamp < earliest_time
     end)
@@ -47,7 +47,7 @@ defmodule Rwife.Workers.MonitorState do
 
   def past_limit_pids(ms) do
     proc_hash = Enum.group_by(ms.monitored_processes, fn(mp) ->
-      mp.worker_info.os_pid
+      mp.os_pid
     end)
     readings_hash = Enum.group_by(ms.perf_readings, fn(pr) ->
       pr.os_pid
@@ -64,6 +64,14 @@ defmodule Rwife.Workers.MonitorState do
     end)
   end
 
+  @spec remove_port(Rwife.Workers.MonitorState.t(), port()) :: Rwife.Workers.MonitorState.t()
+  def remove_port(ms, removed_port) when is_port(removed_port) do
+    kept_mps = Enum.reject(ms.monitored_processes, fn(mp) ->
+      mp.port == removed_port
+    end)
+    %__MODULE__{ms | monitored_processes: kept_mps}
+  end
+
   @spec remove_pids(Rwife.Workers.MonitorState.t(), [integer()]) :: Rwife.Workers.MonitorState.t()
   def remove_pids(ms, []) do
     ms
@@ -71,7 +79,7 @@ defmodule Rwife.Workers.MonitorState do
 
   def remove_pids(ms, os_pid_list) do
     kept_mps = Enum.reject(ms.monitored_processes, fn(mp) ->
-      Enum.member?(os_pid_list, mp.worker_info.os_pid)
+      Enum.member?(os_pid_list, mp.os_pid)
     end)
     kept_prs = Enum.reject(ms.perf_readings, fn(pr) ->
       Enum.member?(os_pid_list, pr.os_pid)
@@ -79,11 +87,19 @@ defmodule Rwife.Workers.MonitorState do
     new_longest_interval = Enum.max(Enum.flat_map(kept_mps, &limit_times/1), fn() -> 0 end)
     %__MODULE__{ms | monitored_processes: kept_mps, perf_readings: kept_prs, longest_interval: new_longest_interval}
   end
-
   def select_monitored_processes_by_os_pid(ms, os_pid_list) do
     Enum.filter(ms.monitored_processes, fn(mp) ->
       Enum.member?(os_pid_list, mp.worker_info.os_pid)
     end)
+  end
+
+  def due_for_check_as_of(ms) do
+    now = System.os_time(:millisecond)
+    diff = (now - ms.last_update)
+    case (diff >= 2400) do
+      false -> (diff - 2400)
+      true -> :now
+    end
   end
 
   defp check_limits(limits, p_readings, last_update) do
