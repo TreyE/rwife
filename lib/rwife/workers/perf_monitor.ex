@@ -21,7 +21,6 @@ defmodule Rwife.Workers.PerfMonitor do
   end
 
   def handle_call({:watch, mp}, _from, state) do
-    Process.link(mp.port)
     new_state = Rwife.Workers.MonitorState.add_monitored_process(state, mp)
     Process.link(mp.port)
     Process.send_after(self(), :tick, 2500)

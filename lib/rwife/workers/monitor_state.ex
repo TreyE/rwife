@@ -18,7 +18,7 @@ defmodule Rwife.Workers.MonitorState do
           RWife.Workers.MonitoredProcess.t()
         ) :: Rwife.Workers.MonitorState.t()
   def add_monitored_process(ms, mp) do
-    %Rwife.Workers.MonitorState{mp | monitored_processes: [mp|ms.monitored_processes]}
+    %Rwife.Workers.MonitorState{ms | monitored_processes: [mp|ms.monitored_processes]}
   end
 
   @spec update_readings(Rwife.Workers.MonitorState.t()) :: Rwife.Workers.MonitorState.t()
@@ -54,7 +54,7 @@ defmodule Rwife.Workers.MonitorState do
     end)
     os_pids = Map.keys(proc_hash)
     Enum.filter(os_pids, fn(os_pid) ->
-      mp = Map.fetch!(proc_hash, os_pid)
+      [mp] = Map.fetch!(proc_hash, os_pid)
       limits = mp.limits
       p_readings = Map.get(readings_hash, os_pid, [])
       case limits do
@@ -89,7 +89,7 @@ defmodule Rwife.Workers.MonitorState do
   end
   def select_monitored_processes_by_os_pid(ms, os_pid_list) do
     Enum.filter(ms.monitored_processes, fn(mp) ->
-      Enum.member?(os_pid_list, mp.worker_info.os_pid)
+      Enum.member?(os_pid_list, mp.os_pid)
     end)
   end
 
@@ -97,7 +97,7 @@ defmodule Rwife.Workers.MonitorState do
     now = System.os_time(:millisecond)
     diff = (now - ms.last_update)
     case (diff >= 2400) do
-      false -> (diff - 2400)
+      false -> (2400 - diff)
       true -> :now
     end
   end

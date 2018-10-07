@@ -77,7 +77,7 @@ defmodule Rwife.PacketServer do
     case settings.perf_limit do
       :LET_ME_BE -> :ok
       a ->
-        mp = Rwife.Workers.MonitoredProcess.new(os_pid, port, a.perf_limit)
+        mp = Rwife.Workers.MonitoredProcess.new(os_pid, port, a)
         Rwife.Workers.PerfMonitor.watch(mp)
     end
     {port, os_pid}
